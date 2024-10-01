@@ -51,10 +51,10 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
 })
 ):
     async with async_session_maker() as session:
-        await HotelsRepository(session).add(hotel_data)
+        result = await HotelsRepository(session).add(hotel_data)
         await session.commit()
 
-    return {"status": "OK"}
+    return {"status": "OK", "data": result}
 
 
 @router.put("/{hotel_id}", summary="Полное обновление")
