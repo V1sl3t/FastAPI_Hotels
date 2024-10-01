@@ -1,6 +1,7 @@
 from fastapi import Query, APIRouter, Body
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
 
+from repositories.hotels import HotelsRepository
 from src.db import async_session_maker, engine
 from src.models.hotels import HotelsOrm
 from src.schemas.hotels import HotelPatch, Hotel
@@ -16,20 +17,12 @@ async def get_hotels(
         title: str | None = Query(None, description="Название отеля"),
 ):
     async with async_session_maker() as session:
-        query = select(HotelsOrm)
-        if location:
-            query = query.filter(HotelsOrm.location.contains(location))
-        if title:
-            query = query.filter(HotelsOrm.title.contains(title))
-        query = (
-            query
-            .limit(pagination.per_page)
-            .offset(pagination.per_page * (pagination.page-1))
+        return await HotelsRepository(session).get_all(
+            location = location,
+            title = title,
+            limit=pagination.per_page,
+            offset=pagination.per_page * (pagination.page - 1)
         )
-        result = await session.execute(query)
-        hotels = result.scalars().all()
-        return hotels
-
 
 
 @router.delete("/{hotel_id}", summary="Удаление")
@@ -58,9 +51,7 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
 })
 ):
     async with async_session_maker() as session:
-        add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
-        print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
-        await session.execute(add_hotel_stmt)
+        await HotelsRepository(session).add(hotel_data)
         await session.commit()
 
     return {"status": "OK"}
