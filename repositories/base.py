@@ -22,12 +22,15 @@ class BaseRepository:
         result = await self.session.execute(add_stmt)
         return result.scalars().one()
 
-    async def edit(self, data: BaseModel, **filter_by):
-        edit_stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump())
-        result = await self.session.execute(edit_stmt)
-        return result.scalars().one()
+    async def edit(self, data: BaseModel, exclude_unset: bool=False, **filter_by):
+        edit_stmt = (
+            update(self.model)
+            .filter_by(**filter_by)
+            .values(**data.model_dump(exclude_unset=exclude_unset))
+        )
+        await self.session.execute(edit_stmt)
 
     async def delete(self, **filter_by):
         delete_stmt = delete(self.model).filter_by(**filter_by)
-        result = await self.session.execute(delete_stmt)
-        return result.scalars().one()
+        await self.session.execute(delete_stmt)
+
