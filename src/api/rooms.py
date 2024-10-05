@@ -61,9 +61,7 @@ async def create_room(db: DBDep, hotel_id: int, room_data: RoomAddRequest = Body
 async def put_room(db: DBDep, hotel_id: int, room_id: int, room_data: RoomAddRequest):
     new_room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(new_room_data, id=room_id)
-    rooms_comforts_data = [RoomComfortAdd(room_id=room_id, comfort_id=f_id) for f_id in room_data.comforts_ids]
-    await db.rooms_comforts.delete(room_id=room_id)
-    await db.rooms_comforts.add_bulk(rooms_comforts_data)
+    await db.rooms_comforts.set_room_comforts(room_id=room_id, comforts_ids=room_data.comforts_ids)
     await db.commit()
     return {"status": "OK"}
 
@@ -75,12 +73,11 @@ async def patch_room(
         room_id: int,
         room_data: RoomPatchRequest
 ):
-    new_room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset=True))
+    room_data_dict = room_data.model_dump(exclude_unset=True)
+    new_room_data = RoomPatch(hotel_id=hotel_id, **room_data_dict)
     await db.rooms.edit(new_room_data, exclude_unset=True, id=room_id, hotel_id=hotel_id)
-    if room_data.comforts_ids:
-        rooms_comforts_data = [RoomComfortAdd(room_id=room_id, comfort_id=f_id) for f_id in room_data.comforts_ids]
-        await db.rooms_comforts.delete(room_id=room_id)
-        await db.rooms_comforts.add_bulk(rooms_comforts_data)
+    if "comforts_ids" in room_data_dict:
+        await db.rooms_comforts.set_room_comforts(room_id=room_id, comforts_ids=room_data_dict["comforts_ids"])
     await db.commit()
     return {"status": "OK"}
 
