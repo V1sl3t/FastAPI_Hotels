@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Body, Query
 
 from src.api.dependencies import DBDep
+from src.schemas.comforts import RoomComfort, RoomComfortAdd
 from src.schemas.rooms import RoomPatch, RoomAdd, RoomAddRequest, RoomPatchRequest
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
@@ -49,15 +50,20 @@ async def create_room(db: DBDep, hotel_id: int, room_data: RoomAddRequest = Body
 ):
     new_room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     result = await db.rooms.add(new_room_data)
+    rooms_comforts_data = [RoomComfortAdd(room_id=result.id, comfort_id=f_id) for f_id in room_data.comforts_ids]
+    await db.rooms_comforts.add_bulk(rooms_comforts_data)
     await db.commit()
 
     return {"status": "OK", "data": result}
 
 
 @router.put("/{hotel_id}/rooms/{room_id}", summary="Полное обновление комнаты")
-async def put_room(db: DBDep, hotel_id: int, room_id: int, room_data: RoomAdd):
+async def put_room(db: DBDep, hotel_id: int, room_id: int, room_data: RoomAddRequest):
     new_room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(new_room_data, id=room_id)
+    rooms_comforts_data = [RoomComfortAdd(room_id=room_id, comfort_id=f_id) for f_id in room_data.comforts_ids]
+    await db.rooms_comforts.delete(room_id=room_id)
+    await db.rooms_comforts.add_bulk(rooms_comforts_data)
     await db.commit()
     return {"status": "OK"}
 
@@ -71,6 +77,10 @@ async def patch_room(
 ):
     new_room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset=True))
     await db.rooms.edit(new_room_data, exclude_unset=True, id=room_id, hotel_id=hotel_id)
+    if room_data.comforts_ids:
+        rooms_comforts_data = [RoomComfortAdd(room_id=room_id, comfort_id=f_id) for f_id in room_data.comforts_ids]
+        await db.rooms_comforts.delete(room_id=room_id)
+        await db.rooms_comforts.add_bulk(rooms_comforts_data)
     await db.commit()
     return {"status": "OK"}
 
