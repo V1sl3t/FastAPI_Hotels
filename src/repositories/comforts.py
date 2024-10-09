@@ -2,12 +2,13 @@ from sqlalchemy import select, delete, insert
 
 from src.models.comforts import ComfortsOrm, RoomsComfortsOrm
 from src.repositories.base import BaseRepository
-from src.schemas.comforts import Comfort, RoomComfort
+from src.repositories.mappers.mappers import ComfortDataMapper
+from src.schemas.comforts import RoomComfort
 
 
 class ComfortsRepository(BaseRepository):
     model = ComfortsOrm
-    schema = Comfort
+    mapper = ComfortDataMapper
 
 
 class RoomsComfortsRepository(BaseRepository):
