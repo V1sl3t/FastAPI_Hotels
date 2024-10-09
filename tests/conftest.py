@@ -25,6 +25,19 @@ async def setup_db(check_test_mode):
         await conn.run_sync(Base.metadata.create_all)
 
 
+@pytest.fixture(scope="session", autouse=True)
+async def upload_db(setup_db):
+    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+        with open('tests/mock_hotels.json.', 'r') as file:
+            hotels_data = json.load(file)
+            for hotel in hotels_data:
+                await db.hotels.add(HotelAdd.model_validate(hotel))
+        with open('tests/mock_rooms.json.', 'r') as file:
+            rooms_data = json.load(file)
+            for room in rooms_data:
+                await db.rooms.add(RoomAdd.model_validate(room))
+        await db.commit()
+
 
 @pytest.fixture(scope="session", autouse=True)
 async def register_user(upload_db):
