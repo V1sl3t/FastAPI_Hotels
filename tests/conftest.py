@@ -18,6 +18,12 @@ def check_test_mode():
     assert settings.MODE == "TEST"
 
 
+@pytest.fixture(scope="function")
+async def db() -> DBManager:
+    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+        yield db
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_db(check_test_mode):
     async with engine_null_pool.begin() as conn:
@@ -27,25 +33,30 @@ async def setup_db(check_test_mode):
 
 @pytest.fixture(scope="session", autouse=True)
 async def upload_db(setup_db):
-    async with DBManager(session_factory=async_session_maker_null_pool) as db:
-        with open('tests/mock_hotels.json.', 'r') as file:
-            hotels_data = json.load(file)
-            for hotel in hotels_data:
-                await db.hotels.add(HotelAdd.model_validate(hotel))
-        with open('tests/mock_rooms.json.', 'r') as file:
-            rooms_data = json.load(file)
-            for room in rooms_data:
-                await db.rooms.add(RoomAdd.model_validate(room))
-        await db.commit()
+    with open('tests/mock_hotels.json.', encoding="utf-8") as hotels_file:
+        hotels_data = json.load(hotels_file)
+    with open('tests/mock_rooms.json.', encoding="utf-8") as rooms_file:
+        rooms_data = json.load(rooms_file)
+    hotels = [HotelAdd.model_validate(hotel) for hotel in hotels_data]
+    rooms = [RoomAdd.model_validate(room) for room in rooms_data]
+    async with DBManager(session_factory=async_session_maker_null_pool) as db_:
+        await db_.hotels.add_bulk(hotels)
+        await db_.rooms.add_bulk(rooms)
+        await db_.commit()
+
+
+@pytest.fixture(scope="session")
+async def ac() -> AsyncClient:
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def register_user(upload_db):
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        await ac.post(
-            "/auth/register",
-            json={
-                "email": "gg@qwe.com",
-                "password": "1234"
-            }
-        )
+async def register_user(ac, upload_db):
+    await ac.post(
+        "/auth/register",
+        json={
+            "email": "gg@qwe.com",
+            "password": "1234"
+        }
+    )
