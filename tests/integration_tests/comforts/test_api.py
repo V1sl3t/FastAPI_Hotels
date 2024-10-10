@@ -1,4 +1,13 @@
 async def test_get_hotels(ac):
     response = await ac.get("/comforts")
-    print(f"{response.json()=}")
     assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+async def test_post_hotels(ac):
+    comfort_title = "TV"
+    response = await ac.post("/comforts", json={"title": comfort_title})
+    assert response.status_code == 200
+    res = response.json()
+    assert isinstance(res, dict)
+    assert "data" in res
+    assert res["data"]["title"] == comfort_title
