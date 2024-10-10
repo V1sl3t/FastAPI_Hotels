@@ -14,4 +14,9 @@ async def test_add_booking(db):
         price=100,
     )
     await db.bookings.add(booking_data)
+    bookings = await db.bookings.get_all()
+    booking_id = bookings[0].id
+    booking_data.price = 1000
+    await db.bookings.edit(booking_data, id=booking_id)
+    await db.bookings.delete(id=booking_id)
     await db.commit()
