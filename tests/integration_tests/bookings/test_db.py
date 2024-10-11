@@ -20,7 +20,9 @@ async def test_booking_crud(db):
     assert booking.id == new_booking.id
     assert booking.room_id == new_booking.room_id
     assert booking.user_id == new_booking.user_id
-    assert booking.model_dump(exclude={"id"}) == booking_data.model_dump() # одновременно все параметры
+    assert (
+        booking.model_dump(exclude={"id"}) == booking_data.model_dump()
+    )  # одновременно все параметры
 
     updated_date = date(year=2024, month=8, day=25)
     update_booking_data = BookingAdd(

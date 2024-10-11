@@ -18,11 +18,14 @@ class RoomAdd(BaseModel):
     price: int
     quantity: int
 
+
 class Room(RoomAdd):
     id: int
 
+
 class RoomWithRelations(Room):
     comforts: list[Comfort]
+
 
 class RoomPatchRequest(BaseModel):
     title: str | None = None

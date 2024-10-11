@@ -1,4 +1,3 @@
-from http.client import HTTPException
 from typing import Annotated
 
 from fastapi import Depends, Query, Request, HTTPException
@@ -27,6 +26,7 @@ def get_token(request: Request) -> str:
 def get_current_user_id(token: str = Depends(get_token)) -> id:
     data = AuthService().decode_token(token)
     return data["user_id"]
+
 
 UserIdDep = Annotated[int, Depends(get_current_user_id)]
 

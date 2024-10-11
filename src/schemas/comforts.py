@@ -13,5 +13,6 @@ class RoomComfortAdd(BaseModel):
     room_id: int
     comfort_id: int
 
+
 class RoomComfort(RoomComfortAdd):
     id: int

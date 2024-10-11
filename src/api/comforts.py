@@ -14,8 +14,6 @@ async def get_all_comforts(db: DBDep):
     return await db.comforts.get_all()
 
 
-
-
 @router.post("", summary="Создание удобства")
 async def create_comfort(db: DBDep, comfort_data: ComfortAdd):
     result = await db.comforts.add(comfort_data)

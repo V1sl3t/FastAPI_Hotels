@@ -11,7 +11,4 @@ class UsersOrm(Base):
     email: Mapped[str] = mapped_column(String(200))
     hashed_password: Mapped[str] = mapped_column(String(200))
 
-    __table_args__ = (
-        UniqueConstraint('email'),
-    )
-
+    __table_args__ = (UniqueConstraint("email"),)

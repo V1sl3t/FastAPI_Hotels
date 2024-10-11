@@ -3,6 +3,7 @@ async def test_get_hotels(ac):
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
+
 async def test_post_hotels(ac):
     comfort_title = "TV"
     response = await ac.post("/comforts", json={"title": comfort_title})
