@@ -9,5 +9,6 @@ async def test_post_hotels(ac):
     assert response.status_code == 200
     res = response.json()
     assert isinstance(res, dict)
+    assert res["status"] == "OK"
     assert "data" in res
     assert res["data"]["title"] == comfort_title
