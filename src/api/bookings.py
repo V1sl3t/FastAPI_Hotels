@@ -1,8 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi_cache.decorator import cache
 
 from src.api.dependencies import DBDep, UserIdDep
+from src.exceptions import ObjectNotFoundException
 from src.schemas.bookings import BookingAddRequest, BookingAdd
+from src.schemas.hotels import Hotel
+from src.schemas.rooms import Room
 
 router = APIRouter(prefix="/bookings", tags=["Бронирования"])
 
@@ -20,8 +23,11 @@ async def get_my_bookings(db: DBDep, user_id: UserIdDep):
 
 @router.post("", summary="Создание брони")
 async def create_booking(db: DBDep, user_id: UserIdDep, booking_data: BookingAddRequest):
-    room = await db.rooms.get_one_or_none(id=booking_data.room_id)
-    hotel = await db.hotels.get_one_or_none(id=room.hotel_id)
+    try:
+        room: Room = await db.rooms.get_one(id=booking_data.room_id)
+    except ObjectNotFoundException as ex:
+        raise HTTPException(status_code=400, detail="Бронирование не найдено")
+    hotel: Hotel = await db.hotels.get_one(id=room.hotel_id)
     new_booking_data = BookingAdd(price=room.price, user_id=user_id, **booking_data.model_dump())
     result = await db.bookings.add_booking(new_booking_data, hotel_id=hotel.id)
     await db.commit()

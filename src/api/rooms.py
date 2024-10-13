@@ -1,9 +1,10 @@
 from datetime import date
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Query, HTTPException
 from fastapi_cache.decorator import cache
 
 from src.api.dependencies import DBDep
+from src.exceptions import ObjectNotFoundException
 from src.schemas.comforts import RoomComfortAdd
 from src.schemas.rooms import RoomPatch, RoomAdd, RoomAddRequest, RoomPatchRequest
 
@@ -18,6 +19,8 @@ async def get_rooms(
     date_from: date = Query(examples=["2024-08-01"]),
     date_to: date = Query(examples=["2024-08-10"]),
 ):
+    if date_to < date_from:
+        raise HTTPException(status_code=400, detail="Дата заезда не может позже даты выезда!")
     return await db.rooms.get_filtered_by_time(
         hotel_id=hotel_id, date_from=date_from, date_to=date_to
     )
@@ -25,7 +28,10 @@ async def get_rooms(
 
 @router.get("/{hotel_id}/rooms/{room_id}", summary="Получение комнаты")
 async def get_room(db: DBDep, hotel_id: int, room_id: int):
-    return await db.rooms.get_one_or_none_with_rels(hotel_id=hotel_id, id=room_id)
+    try:
+        return await db.rooms.get_one_or_none_with_rels(hotel_id=hotel_id, id=room_id)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=400, detail="Номер не найден")
 
 
 @router.post("/{hotel_id}/rooms", summary="Создание комнаты")
@@ -37,7 +43,6 @@ async def create_room(
             "1": {
                 "summary": "BigHit",
                 "value": {
-                    "hotel_id": 4,
                     "title": "Big",
                     "description": "very cool",
                     "price": 1000,
@@ -47,7 +52,6 @@ async def create_room(
             "2": {
                 "summary": "Дубай",
                 "value": {
-                    "hotel_id": 5,
                     "title": "WWQQQ",
                     "description": "top 1000",
                     "price": 2000,
@@ -58,7 +62,10 @@ async def create_room(
     ),
 ):
     new_room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
-    result = await db.rooms.add(new_room_data)
+    try:
+        result = await db.rooms.add(new_room_data)
+    except ObjectNotFoundException:
+        raise HTTPException(status_code=400, detail="Такого отеля не существует")
     rooms_comforts_data = [
         RoomComfortAdd(room_id=result.id, comfort_id=f_id) for f_id in room_data.comforts_ids
     ]

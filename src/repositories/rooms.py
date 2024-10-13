@@ -1,8 +1,11 @@
 from datetime import date
 
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, insert, update
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlalchemy.orm import selectinload
 
+from src.exceptions import ObjectNotFoundException
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
 from src.repositories.mappers.mappers import RoomDataMapper, RoomDataWithRelsMapper
@@ -32,9 +35,28 @@ class RoomsRepository(BaseRepository):
         ]
 
     async def get_one_or_none_with_rels(self, **filter_by):
-        query = select(self.model).options(selectinload(self.model.comforts)).filter_by(**filter_by)
-        result = await self.session.execute(query)
-        model = result.scalars().one_or_none()
-        if model:
+        try:
+            query = select(self.model).options(selectinload(self.model.comforts)).filter_by(**filter_by)
+            result = await self.session.execute(query)
+            model = result.scalars().one_or_none()
             return RoomDataWithRelsMapper.map_to_domain_entity(model)
-        return None
+        except NoResultFound:
+            raise ObjectNotFoundException
+
+    async def add(self, data: BaseModel):
+        try:
+            add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
+            result = await self.session.execute(add_stmt)
+            model = result.scalars().one()
+        except IntegrityError:
+            raise ObjectNotFoundException
+        return self.mapper.map_to_domain_entity(model)
+
+    async def edit(self, data: BaseModel, exclude_unset: bool = False, **filter_by):
+        edit_stmt = (
+            update(self.model)
+            .filter_by(**filter_by)
+            .values(**data.model_dump(exclude_unset=exclude_unset))
+        )
+        await self.session.execute(edit_stmt)
+
