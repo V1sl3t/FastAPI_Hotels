@@ -5,7 +5,7 @@ from sqlalchemy import select, insert, update
 from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlalchemy.orm import selectinload
 
-from src.exceptions import ObjectNotFoundException
+from src.exceptions import ObjectNotFoundException, RoomNotFoundException
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
 from src.repositories.mappers.mappers import RoomDataMapper, RoomDataWithRelsMapper
@@ -34,29 +34,15 @@ class RoomsRepository(BaseRepository):
             for model in result.unique().scalars().all()
         ]
 
-    async def get_one_or_none_with_rels(self, **filter_by):
-        try:
-            query = select(self.model).options(selectinload(self.model.comforts)).filter_by(**filter_by)
-            result = await self.session.execute(query)
-            model = result.scalars().one_or_none()
-            return RoomDataWithRelsMapper.map_to_domain_entity(model)
-        except NoResultFound:
-            raise ObjectNotFoundException
-
-    async def add(self, data: BaseModel):
-        try:
-            add_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
-            result = await self.session.execute(add_stmt)
-            model = result.scalars().one()
-        except IntegrityError:
-            raise ObjectNotFoundException
-        return self.mapper.map_to_domain_entity(model)
-
-    async def edit(self, data: BaseModel, exclude_unset: bool = False, **filter_by):
-        edit_stmt = (
-            update(self.model)
-            .filter_by(**filter_by)
-            .values(**data.model_dump(exclude_unset=exclude_unset))
+    async def get_one_with_rels(self, **filter_by):
+        query = (
+            select(self.model).options(selectinload(self.model.facilities)).filter_by(**filter_by)  # type: ignore
         )
-        await self.session.execute(edit_stmt)
+        result = await self.session.execute(query)
+        try:
+            model = result.scalar_one()
+        except NoResultFound:
+            raise RoomNotFoundException
+        return RoomDataWithRelsMapper.map_to_domain_entity(model)
+
 

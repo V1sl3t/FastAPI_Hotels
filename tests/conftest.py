@@ -13,7 +13,7 @@ from src.config import settings
 from src.db import Base, engine_null_pool, async_session_maker_null_pool
 from src.main import app
 from src.models import *  # noqa
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 
 from src.schemas.hotels import HotelAdd
 from src.schemas.rooms import RoomAdd
@@ -62,7 +62,7 @@ async def upload_db(setup_db):
 
 @pytest.fixture(scope="session")
 async def ac() -> AsyncClient:
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
