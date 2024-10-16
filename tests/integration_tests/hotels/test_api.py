@@ -1,4 +1,7 @@
-async def test_get_hotels(ac):
+from httpx import AsyncClient
+
+
+async def test_get_hotels(ac: AsyncClient):
     response = await ac.get(
         "/hotels",
         params={

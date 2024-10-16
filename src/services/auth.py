@@ -1,12 +1,16 @@
 from datetime import datetime, timezone, timedelta
 
-from fastapi import Response
 from passlib.context import CryptContext
 import jwt
 
 from src.config import settings
-from src.exceptions import ObjectAlreadyExistsException, UserAlreadyExistsException, IncorrectTokenException, \
-    UserNotFoundException, IncorrectPasswordException
+from src.exceptions import (
+    ObjectAlreadyExistsException,
+    UserAlreadyExistsException,
+    IncorrectTokenException,
+    UserNotFoundException,
+    IncorrectPasswordException,
+)
 from src.schemas.users import UserRequestAdd, UserAdd
 from src.services.base import BaseService
 
@@ -46,19 +50,14 @@ class AuthService(BaseService):
         except ObjectAlreadyExistsException as ex:
             raise UserAlreadyExistsException from ex
 
-    async def login_user(self, data: UserRequestAdd, response: Response):
+    async def login_user(self, data: UserRequestAdd):
         user = await self.db.users.get_user_with_hashed_password(email=data.email)
         if not user:
             raise UserNotFoundException
         if not self.verify_password(data.password, user.hashed_password):
             raise IncorrectPasswordException
         access_token = self.create_access_token({"user_id": user.id})
-        response.set_cookie("access_token", access_token)
         return access_token
 
     async def get_me(self, user_id: id):
         return await self.db.users.get_one_or_none(id=user_id)
-
-    async def logout_user(self, response: Response):
-        response.delete_cookie(key="access_token")
-

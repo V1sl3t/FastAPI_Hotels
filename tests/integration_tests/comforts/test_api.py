@@ -1,10 +1,13 @@
-async def test_get_hotels(ac):
+from httpx import AsyncClient
+
+
+async def test_get_hotels(ac: AsyncClient):
     response = await ac.get("/comforts")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 
-async def test_post_hotels(ac):
+async def test_post_hotels(ac: AsyncClient):
     comfort_title = "TV"
     response = await ac.post("/comforts", json={"title": comfort_title})
     assert response.status_code == 200

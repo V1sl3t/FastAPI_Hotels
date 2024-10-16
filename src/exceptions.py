@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 class HotBookException(Exception):
     detail = "Неожиданная ошибка"
+
     def __init__(self, *args, **kwargs):
         super().__init__(self.detail, *args, **kwargs)
 
@@ -53,6 +54,7 @@ def check_date_to_after_date_from(date_from: date, date_to: date) -> None:
 class HotBookHTTPException(HTTPException):
     status_code = 500
     detail = None
+
     def __init__(self):
         super().__init__(status_code=self.status_code, detail=self.detail)
 
@@ -88,5 +90,10 @@ class UserNotFoundHTTPException(HotBookHTTPException):
 
 
 class IncorrectPasswordHTTPException(HotBookHTTPException):
-    status_code = 404
+    status_code = 401
     detail = "Неверный пароль"
+
+
+class NoAccessTokenHTTPException(HotBookHTTPException):
+    status_code = 401
+    detail = "Не предоставлен access токен"
