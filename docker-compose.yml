@@ -17,7 +17,7 @@ services:
       - myNetwork
     env_file:
       - .env
-    command: "celery --app=src.tasks.celery_app:celery_instance worker -l INFO"
+    command: "celery --app=src.tasks.celery_app:celery_manager worker -l INFO"
   booking_celery_beat_service:
     container_name: 'booking_celery_beat'
     build:
@@ -26,7 +26,7 @@ services:
       - myNetwork
     env_file:
       - .env
-    command: "celery --app=src.tasks.celery_app:celery_instance beat -l INFO"
+    command: "celery --app=src.tasks.celery_app:celery_manager beat -l INFO"
 networks:
   myNetwork:
     external: true
