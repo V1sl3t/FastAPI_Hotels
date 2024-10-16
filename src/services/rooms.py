@@ -33,10 +33,11 @@ class RoomService(BaseService):
         await HotelService(self.db).get_hotel_with_check(hotel_id)
         _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
         room: Room = await self.db.rooms.add(_room_data)
-        rooms_facilities_data = [
-            RoomComfortAdd(room_id=room.id, facility_id=f_id) for f_id in room_data.facilities_ids
+        rooms_comforts_data = [
+            RoomComfortAdd(room_id=room.id, comfort_id=f_id) for f_id in room_data.comforts_ids
         ]
-        await self.db.rooms_comforts.add_bulk(rooms_facilities_data)
+        if rooms_comforts_data:
+            await self.db.rooms_comforts.add_bulk(rooms_comforts_data)
         await self.db.commit()
 
     async def edit_room(
@@ -49,8 +50,8 @@ class RoomService(BaseService):
         await self.get_room_with_check(room_id)
         _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
         await self.db.rooms.edit(_room_data, id=room_id)
-        await self.db.rooms_comforts.set_room_facilities(
-            room_id, facilities_ids=room_data.facilities_ids
+        await self.db.rooms_comforts.set_room_comforts(
+            room_id, comforts_ids=room_data.comforts_ids
         )
         await self.db.commit()
 
@@ -65,9 +66,9 @@ class RoomService(BaseService):
         _room_data_dict = room_data.model_dump(exclude_unset=True)
         _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
         await self.db.rooms.edit(_room_data, exclude_unset=True, id=room_id, hotel_id=hotel_id)
-        if "facilities_ids" in _room_data_dict:
-            await self.db.rooms_comforts.set_room_facilities(
-                room_id, facilities_ids=_room_data_dict["facilities_ids"]
+        if "comforts_ids" in _room_data_dict:
+            await self.db.rooms_comforts.set_room_comforts(
+                room_id, comforts_ids=_room_data_dict["comforts_ids"]
             )
         await self.db.commit()
 
