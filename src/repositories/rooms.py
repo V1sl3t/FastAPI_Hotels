@@ -35,7 +35,7 @@ class RoomsRepository(BaseRepository):
 
     async def get_one_with_rels(self, **filter_by):
         query = (
-            select(self.model).options(selectinload(self.model.facilities)).filter_by(**filter_by)  # type: ignore
+            select(self.model).options(selectinload(self.model.comforts)).filter_by(**filter_by)  # type: ignore
         )
         result = await self.session.execute(query)
         try:
