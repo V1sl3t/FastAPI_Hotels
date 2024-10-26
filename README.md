@@ -45,7 +45,7 @@ docker run --name booking_nginx \
     --network=myNetwork \
     --rm -p 80:80 -p 443:443 -d nginx
 
-sudo docker compose up -d 
+docker compose up -d 
 ```
 
 ## Автор проекта 
